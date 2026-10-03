@@ -1,4 +1,4 @@
-/// Bridge deep-linking SDK for Flutter.
+/// Deep-linking SDK for Dart and Flutter.
 library;
 
 export 'src/signature.dart';

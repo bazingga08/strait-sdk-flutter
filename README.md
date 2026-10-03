@@ -9,6 +9,16 @@ Part of [Bridge](../). The match signature is a Dart port of
 as the server, web, and React Native SDKs (run by `dart test` in CI) — so the
 signature can never drift across languages.
 
+## Install
+
+<!-- brand:install -->
+```sh
+dart pub add bridge_sdk      # Flutter apps: flutter pub add bridge_sdk
+```
+<!-- /brand:install -->
+
+Pure Dart (no Flutter dependency), so it works in Flutter apps and Dart servers alike.
+
 ## Use (recommended): `BridgeLinks`
 
 `BridgeLinks` is pure Dart. Your app hands it the launch URL, a stream of
