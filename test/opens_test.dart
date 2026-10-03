@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:bridge_sdk/bridge_sdk.dart';
+import 'package:strait_sdk/strait_sdk.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 // gets through, and never delays navigation. Plus the B6/B7 revisions.
 // Port of sdk-react-native/test/opens.test.ts.
 
-const pk = 'bk_pub_test_appowner01';
+const pk = 'st_pub_test_appowner01';
 const endpoint = 'https://links.test';
 const click = '3f2a9c1e-7b4d-4e8a-9c0f-1a2b3c4d5e6f';
 final openIdRe = RegExp(r'^o_[a-z0-9]+_[a-z0-9]{12}$');
@@ -67,15 +67,15 @@ class FakePhone {
 
 class Harness {
   final FakePhone phone;
-  final BridgeLinks bridge;
+  final StraitLinks strait;
   final MemoryStore storage;
   final events = <LinkEvent>[];
-  Harness(this.phone, this.bridge, this.storage) {
-    bridge.onLink.listen(events.add);
+  Harness(this.phone, this.strait, this.storage) {
+    strait.onLink.listen(events.add);
   }
 
   Future<void> start({String? initialUrl}) async {
-    await bridge.start(
+    await strait.start(
         initialUrl: initialUrl, urls: phone.urls.stream, lifecycle: phone.states.stream);
     await Future<void>.delayed(Duration.zero); // deliver replayed events
   }
@@ -85,7 +85,7 @@ Harness make(FakePhone phone, FakeEngine engine, [MemoryStore? storage]) {
   final s = storage ?? MemoryStore();
   return Harness(
     phone,
-    BridgeLinks(
+    StraitLinks(
       publishableKey: pk,
       endpoint: endpoint,
       platform: phone.platform,
@@ -127,7 +127,7 @@ class BrokenStore implements KeyValueStore {
 }
 
 /// Not the first launch.
-MemoryStore returning() => MemoryStore()..data['bridge.deferredChecked'] = '1';
+MemoryStore returning() => MemoryStore()..data['strait.deferredChecked'] = '1';
 
 void main() {
   group('browser hand-off (custom scheme) with a tap id', () {
@@ -140,7 +140,7 @@ void main() {
       phone.advance(5000);
       phone.setState(AppLifecycle.active);
       phone.advance(200);
-      phone.tap('bridgelink://shop.example/p/42?color=red&bridge_click=$click');
+      phone.tap('straitlink://shop.example/p/42?color=red&strait_click=$click');
       await settle();
       final e = h.events.last;
       expect(e.route, LinkRoute.customScheme);
@@ -166,7 +166,7 @@ void main() {
 
     test('navigation never waits for the report', () async {
       final h = make(FakePhone(), FakeEngine({'/v1/open': hang}), returning());
-      await h.start(initialUrl: 'bridgelink://shop.example/p/1?bridge_click=$click');
+      await h.start(initialUrl: 'straitlink://shop.example/p/1?strait_click=$click');
       expect(h.events, hasLength(1));
       expect(h.events[0].url, 'https://shop.example/p/1');
     });
@@ -225,7 +225,7 @@ void main() {
       await settle();
       expect(h.events.last.matched, isFalse);
       expect(h.events.last.reason, 'network');
-      expect(await h.bridge.pendingOpenReports(), 1);
+      expect(await h.strait.pendingOpenReports(), 1);
       // network returns; user leaves and comes back
       engine.routes['/v1/open'] = accepted;
       phone.setState(AppLifecycle.background);
@@ -239,7 +239,7 @@ void main() {
       expect(body['url'], 'https://links.test/sale');
       expect(body['matched'], false);
       expect(body['reason'], 'network');
-      expect(await h.bridge.pendingOpenReports(), 0);
+      expect(await h.strait.pendingOpenReports(), 0);
     });
   });
 
@@ -249,15 +249,15 @@ void main() {
       final engine = FakeEngine({'/v1/open': const Reply(503)});
       final h = make(phone, engine, returning());
       await h.start();
-      phone.tap('bridgelink://a.b/1');
+      phone.tap('straitlink://a.b/1');
       await settle();
-      expect(await h.bridge.pendingOpenReports(), 1);
+      expect(await h.strait.pendingOpenReports(), 1);
       engine.routes['/v1/open'] = const Reply(429);
-      await h.bridge.flushOpenReports();
-      expect(await h.bridge.pendingOpenReports(), 1);
+      await h.strait.flushOpenReports();
+      expect(await h.strait.pendingOpenReports(), 1);
       engine.routes['/v1/open'] = const Reply(400, {'error': 'bad'});
-      await h.bridge.flushOpenReports();
-      expect(await h.bridge.pendingOpenReports(), 0);
+      await h.strait.flushOpenReports();
+      expect(await h.strait.pendingOpenReports(), 0);
     });
 
     test('survives an app restart (stored), and is sent on the next start', () async {
@@ -265,18 +265,18 @@ void main() {
       final phone1 = FakePhone();
       final first = make(phone1, FakeEngine({'/v1/open': offline}), storage);
       await first.start();
-      phone1.tap('bridgelink://a.b/1');
-      phone1.tap('bridgelink://a.b/2');
+      phone1.tap('straitlink://a.b/1');
+      phone1.tap('straitlink://a.b/2');
       await settle();
-      expect(await first.bridge.pendingOpenReports(), 2);
-      first.bridge.stop();
+      expect(await first.strait.pendingOpenReports(), 2);
+      first.strait.stop();
 
       final e2 = FakeEngine({'/v1/open': accepted});
       final second = make(FakePhone(), e2, storage);
       await second.start();
       await settle();
       expect(e2.of('/v1/open').map((c) => c.body!['url']), ['https://a.b/1', 'https://a.b/2']);
-      expect(await second.bridge.pendingOpenReports(), 0);
+      expect(await second.strait.pendingOpenReports(), 0);
     });
 
     test('a successful report also sends anything saved earlier', () async {
@@ -284,12 +284,12 @@ void main() {
       final engine = FakeEngine({'/v1/open': offline});
       final h = make(phone, engine, returning());
       await h.start();
-      phone.tap('bridgelink://a.b/old');
+      phone.tap('straitlink://a.b/old');
       await settle();
       engine.routes['/v1/open'] = accepted;
-      phone.tap('bridgelink://a.b/new');
+      phone.tap('straitlink://a.b/new');
       await settle();
-      expect(await h.bridge.pendingOpenReports(), 0);
+      expect(await h.strait.pendingOpenReports(), 0);
       expect(
           engine
               .of('/v1/open')
@@ -304,7 +304,7 @@ void main() {
       final h = make(phone, FakeEngine({'/v1/open': accepted}), returning());
       await h.start();
       for (var i = 0; i < 5; i++) {
-        phone.tap('bridgelink://a.b/$i');
+        phone.tap('straitlink://a.b/$i');
       }
       await settle();
       expect(h.events.map((e) => e.id).toSet(), hasLength(5));
@@ -320,7 +320,7 @@ void main() {
       expect(engine.of('/v1/resolve')[0].body!['firstLaunch'], true);
       expect(engine.of('/v1/referrer'), isEmpty);
       expect(engine.of('/v1/match'), isEmpty);
-      expect(h.storage.data['bridge.deferredChecked'], '1');
+      expect(h.storage.data['strait.deferredChecked'], '1');
     });
 
     test('Play referrer: sends the tap id and the openId', () async {
@@ -333,7 +333,7 @@ void main() {
         })
       });
       final h = make(
-          FakePhone(referrer: 'utm_source=google-play&bridge_link=lnk_42&bridge_click=$click'),
+          FakePhone(referrer: 'utm_source=google-play&strait_link=lnk_42&strait_click=$click'),
           engine);
       await h.start();
       expect(engine.of('/v1/referrer')[0].body, {
@@ -368,12 +368,12 @@ void main() {
       await first.start();
       expect(first.events[0].kind, LinkKind.deferred);
       expect(first.events[0].reason, 'network');
-      expect(storage.data['bridge.deferredChecked'], isNull);
+      expect(storage.data['strait.deferredChecked'], isNull);
 
       final e2 = FakeEngine({'/v1/match': noMatch});
       await make(FakePhone(), e2, storage).start();
       expect(e2.of('/v1/match'), hasLength(1));
-      expect(storage.data['bridge.deferredChecked'], '1');
+      expect(storage.data['strait.deferredChecked'], '1');
 
       final e3 = FakeEngine({'/v1/match': noMatch});
       await make(FakePhone(), e3, storage).start();
@@ -385,14 +385,14 @@ void main() {
       final h = make(FakePhone(), FakeEngine({'/v1/match': const Reply(502)}), storage);
       await h.start();
       expect(h.events[0].reason, 'network');
-      expect(storage.data['bridge.deferredChecked'], isNull);
+      expect(storage.data['strait.deferredChecked'], isNull);
     });
 
     test('the debug re-check never records an install (no openId)', () async {
       final engine = FakeEngine({'/v1/match': noMatch});
       final h = make(FakePhone(), engine, returning());
       await h.start();
-      await h.bridge.checkDeferred();
+      await h.strait.checkDeferred();
       expect(engine.of('/v1/match'), hasLength(1));
       expect(engine.of('/v1/match')[0].body!.containsKey('openId'), isFalse);
       expect(engine.of('/v1/match')[0].body!.containsKey('at'), isFalse);
@@ -400,7 +400,7 @@ void main() {
 
     test('unreadable storage = already checked (no deferred jump); write failures never throw',
         () async {
-      BridgeLinks bridge(FakeEngine engine, KeyValueStore store) => BridgeLinks(
+      StraitLinks strait(FakeEngine engine, KeyValueStore store) => StraitLinks(
             publishableKey: pk,
             endpoint: endpoint,
             platform: 'android',
@@ -410,13 +410,13 @@ void main() {
             now: () => 1800000000000,
           );
       final engine = FakeEngine({'/v1/match': noMatch, '/v1/resolve': resolved});
-      await bridge(engine, BrokenStore(failGet: true)).start();
+      await strait(engine, BrokenStore(failGet: true)).start();
       expect(engine.of('/v1/match'), isEmpty);
       final e2 = FakeEngine({'/v1/match': noMatch});
-      await expectLater(bridge(e2, BrokenStore()).start(), completes);
+      await expectLater(strait(e2, BrokenStore()).start(), completes);
       final e3 = FakeEngine({'/v1/resolve': resolved});
       await expectLater(
-          bridge(e3, BrokenStore()).start(initialUrl: 'https://links.test/sale'), completes);
+          strait(e3, BrokenStore()).start(initialUrl: 'https://links.test/sale'), completes);
     });
   });
 

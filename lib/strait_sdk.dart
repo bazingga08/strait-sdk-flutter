@@ -4,4 +4,4 @@ library;
 export 'src/signature.dart';
 export 'src/core.dart';
 export 'src/client.dart';
-export 'src/bridge.dart';
+export 'src/strait.dart';

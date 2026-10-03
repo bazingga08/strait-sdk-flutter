@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bridge_sdk/bridge_sdk.dart';
+import 'package:strait_sdk/strait_sdk.dart';
 import 'package:test/test.dart';
 
-/// Cross-language contract: the same conformance vectors every Bridge SDK
+/// Cross-language contract: the same conformance vectors every Strait SDK
 /// asserts (generated from sdk-react-native/src/core.ts).
 void main() {
   final v = jsonDecode(File('test/conformance-vectors.json').readAsStringSync())
@@ -51,18 +51,18 @@ void main() {
     }
   });
 
-  group('parseBridgeLink', () {
+  group('parseStraitLink', () {
     for (final c in v['referrer'] as List) {
       test(jsonEncode(c['input']), () {
-        expect(parseBridgeLink(c['input'] as String?), c['expected']);
+        expect(parseStraitLink(c['input'] as String?), c['expected']);
       });
     }
   });
 
-  group('parseBridgeClick', () {
+  group('parseStraitClick', () {
     for (final c in v['referrerClick'] as List) {
       test(jsonEncode(c['input']), () {
-        expect(parseBridgeClick(c['input'] as String?), c['expected']);
+        expect(parseStraitClick(c['input'] as String?), c['expected']);
       });
     }
   });

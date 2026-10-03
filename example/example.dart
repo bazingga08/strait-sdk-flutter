@@ -1,6 +1,6 @@
-// Minimal use of the pure-Dart helpers. For the full client (`BridgeLinks`,
+// Minimal use of the pure-Dart helpers. For the full client (`StraitLinks`,
 // direct + deferred links, open reporting) see the README.
-import 'package:bridge_sdk/bridge_sdk.dart';
+import 'package:strait_sdk/strait_sdk.dart';
 
 Future<void> main() async {
   // Classify an incoming URL: a short link needs resolving, anything else is a destination.
@@ -9,7 +9,7 @@ Future<void> main() async {
 
   // First launch after install: ask for the deferred link (never throws).
   final result = await resolveDeferredLink(
-    publishableKey: 'bk_pub_live_…', // Dashboard → Get started; never the secret key
+    publishableKey: 'st_pub_live_…', // Dashboard → Get started; never the secret key
     endpoint: 'https://go.yourbrand.com',
     platform: 'android',
     device: DeviceFields(

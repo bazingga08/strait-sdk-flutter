@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:bridge_sdk/bridge_sdk.dart';
+import 'package:strait_sdk/strait_sdk.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
 
-const pk = 'bk_pub_test_appowner01';
+const pk = 'st_pub_test_appowner01';
 const endpoint = 'https://links.test';
 const device = DeviceFields(
     screenWidth: 411, pixelRatio: 2.625, language: 'en', timezone: 'Asia/Kolkata');
@@ -55,13 +55,13 @@ class FakePhone {
 class Harness {
   final FakePhone phone;
   final FakeEngine engine;
-  final BridgeLinks bridge;
+  final StraitLinks strait;
   final events = <LinkEvent>[];
-  Harness(this.phone, this.engine, this.bridge) {
-    bridge.onLink.listen(events.add);
+  Harness(this.phone, this.engine, this.strait) {
+    strait.onLink.listen(events.add);
   }
 
-  Future<void> start({String? initialUrl}) => bridge.start(
+  Future<void> start({String? initialUrl}) => strait.start(
       initialUrl: initialUrl, urls: phone.urls.stream, lifecycle: phone.states.stream);
 }
 
@@ -71,7 +71,7 @@ Harness make(FakeEngine engine,
   return Harness(
     p,
     engine,
-    BridgeLinks(
+    StraitLinks(
       publishableKey: pk,
       endpoint: endpoint,
       platform: platform,
@@ -172,7 +172,7 @@ void main() {
 
     test('custom scheme hand-off carries the destination, no network call (B4)', () async {
       final h = make(FakeEngine({}));
-      await h.start(initialUrl: 'bridgelink://shop.example/p/42?color=red');
+      await h.start(initialUrl: 'straitlink://shop.example/p/42?color=red');
       await flush();
       final e = h.events.first;
       expect(e.route, LinkRoute.customScheme);
@@ -197,7 +197,7 @@ void main() {
 
     test('network failure → matched:false reason network, never throws (B10)', () async {
       final p = FakePhone();
-      final bridge = BridgeLinks(
+      final strait = StraitLinks(
         publishableKey: pk,
         endpoint: endpoint,
         platform: 'ios',
@@ -205,19 +205,19 @@ void main() {
         client: MockClient((_) async => throw Exception('offline')),
         now: () => p.t,
       );
-      final e = await bridge.handleUrl('https://links.test/sale');
+      final e = await strait.handleUrl('https://links.test/sale');
       expect(e.matched, isFalse);
       expect(e.reason, 'network');
-      final d = await bridge.checkDeferred();
+      final d = await strait.checkDeferred();
       expect(d.matched, isFalse);
       expect(d.reason, 'network');
-      expect(await bridge.trackEvent('x'), isFalse);
-      expect(await bridge.reportFingerprint(), isNull);
+      expect(await strait.trackEvent('x'), isFalse);
+      expect(await strait.reportFingerprint(), isNull);
     });
 
     test('late subscribers still receive events that already happened', () async {
       final p = FakePhone();
-      final bridge = BridgeLinks(
+      final strait = StraitLinks(
         publishableKey: pk,
         endpoint: endpoint,
         platform: 'android',
@@ -225,9 +225,9 @@ void main() {
         client: FakeEngine({}).client,
         now: () => p.t,
       );
-      await bridge.start(initialUrl: 'bridgelink://shop.example/cart');
+      await strait.start(initialUrl: 'straitlink://shop.example/cart');
       final late = <LinkEvent>[];
-      bridge.onLink.listen(late.add);
+      strait.onLink.listen(late.add);
       await flush();
       expect(late, hasLength(1));
       expect(late.first.path, '/cart');
@@ -236,8 +236,8 @@ void main() {
     test('onLinkStart fires before the event, with the same id (B9)', () async {
       final h = make(FakeEngine(resolved));
       final order = <String>[];
-      h.bridge.onLinkStart.listen((s) => order.add('start:${s.id}:${s.rawUrl}'));
-      h.bridge.onLink.listen((e) => order.add('event:${e.id}'));
+      h.strait.onLinkStart.listen((s) => order.add('start:${s.id}:${s.rawUrl}'));
+      h.strait.onLink.listen((e) => order.add('event:${e.id}'));
       await h.start(initialUrl: 'https://links.test/sale');
       await flush();
       final id = h.events.single.id;
@@ -246,8 +246,8 @@ void main() {
 
     test('launch link echoed on the URL stream is handled once', () async {
       final h = make(FakeEngine({}));
-      final start = h.start(initialUrl: 'bridgelink://shop.example/cart');
-      h.phone.tap('bridgelink://shop.example/cart');
+      final start = h.start(initialUrl: 'straitlink://shop.example/cart');
+      h.phone.tap('straitlink://shop.example/cart');
       await start;
       await flush();
       expect(h.events.where((e) => e.kind == LinkKind.direct), hasLength(1));
@@ -265,7 +265,7 @@ void main() {
     };
 
     test('first launch: Play install referrer → the tapped link (B7)', () async {
-      final h = make(FakeEngine(referrerHit), referrer: 'utm_source=google-play&bridge_link=lnk_7');
+      final h = make(FakeEngine(referrerHit), referrer: 'utm_source=google-play&strait_link=lnk_7');
       await h.start();
       await flush();
       final e = h.events.first;
@@ -283,8 +283,8 @@ void main() {
 
     test('runs only once per install (B6)', () async {
       final storage = MemoryStore();
-      await make(FakeEngine(referrerHit), referrer: 'bridge_link=lnk_7', storage: storage).start();
-      final second = make(FakeEngine(referrerHit), referrer: 'bridge_link=lnk_7', storage: storage);
+      await make(FakeEngine(referrerHit), referrer: 'strait_link=lnk_7', storage: storage).start();
+      final second = make(FakeEngine(referrerHit), referrer: 'strait_link=lnk_7', storage: storage);
       await second.start();
       await flush();
       expect(second.events.where((e) => e.kind == LinkKind.deferred), isEmpty);
@@ -314,7 +314,7 @@ void main() {
       final h = make(FakeEngine({
         '/v1/referrer': {'matched': false},
         '/v1/match': {'matched': true, 'longUrl': 'https://shop.example/x', 'linkId': 'lnk_9'},
-      }), referrer: 'bridge_link=lnk_7');
+      }), referrer: 'strait_link=lnk_7');
       await h.start();
       await flush();
       expect(h.engine.calls.map((c) => c.path), ['/v1/referrer', '/v1/match']);
@@ -326,7 +326,7 @@ void main() {
     test('iOS goes straight to /v1/match with device fields (B8)', () async {
       final h = make(FakeEngine({
         '/v1/match': {'matched': true, 'longUrl': 'https://shop.example/x?a=1'}
-      }), platform: 'ios', referrer: 'bridge_link=lnk_7');
+      }), platform: 'ios', referrer: 'strait_link=lnk_7');
       await h.start();
       await flush();
       expect(h.engine.calls.map((c) => c.path), ['/v1/match']);
@@ -337,11 +337,11 @@ void main() {
 
     test('first launch opened by a link skips the deferred check but marks it', () async {
       final storage = MemoryStore();
-      final h = make(FakeEngine(referrerHit), referrer: 'bridge_link=lnk_7', storage: storage);
-      await h.start(initialUrl: 'bridgelink://shop.example/cart');
+      final h = make(FakeEngine(referrerHit), referrer: 'strait_link=lnk_7', storage: storage);
+      await h.start(initialUrl: 'straitlink://shop.example/cart');
       await flush();
       expect(h.events.map((e) => e.kind), [LinkKind.direct]);
-      expect(await storage.get('bridge.deferredChecked'), '1');
+      expect(await storage.get('strait.deferredChecked'), '1');
     });
   });
 
@@ -350,11 +350,11 @@ void main() {
       final h = make(FakeEngine({
         '/v1/debug/fingerprint': {'extHash': 'abc', 'coreHash': 'def', 'inputs': {}}
       }));
-      final report = await h.bridge.reportFingerprint();
+      final report = await h.strait.reportFingerprint();
       expect(report!['extHash'], 'abc');
       expect(h.engine.find('/v1/debug/fingerprint')!.body,
           {'publishableKey': pk, 'origin': 'app', ...device.toJson()});
-      final cmp = await h.bridge.compareFingerprint();
+      final cmp = await h.strait.compareFingerprint();
       expect(cmp!['coreHash'], 'def');
       expect(h.engine.find('/v1/debug/fingerprint', 'GET'), isNotNull);
     });
@@ -363,7 +363,7 @@ void main() {
       final h = make(FakeEngine({
         '/v1/event': {'ok': true}
       }));
-      expect(await h.bridge.trackEvent('purchase', value: 49.99, currency: 'USD', linkId: 'lnk_42'),
+      expect(await h.strait.trackEvent('purchase', value: 49.99, currency: 'USD', linkId: 'lnk_42'),
           isTrue);
       expect(h.engine.calls.last.body, {
         'publishableKey': pk,

@@ -96,13 +96,13 @@ List<String> normalizeLinkHosts(String endpoint, [List<String> linkHosts = const
   return out;
 }
 
-/// The `bridge_link` id inside a Play Install Referrer string, or null.
-String? parseBridgeLink(String? referrer) => _referrerParam(referrer, 'bridge_link');
+/// The `strait_link` id inside a Play Install Referrer string, or null.
+String? parseStraitLink(String? referrer) => _referrerParam(referrer, 'strait_link');
 
-/// The tap id (`bridge_click`) inside a Play Install Referrer string, or null.
+/// The tap id (`strait_click`) inside a Play Install Referrer string, or null.
 /// Joins the install to the exact tap that sent the user to the store.
-String? parseBridgeClick(String? referrer) {
-  final v = _referrerParam(referrer, 'bridge_click');
+String? parseStraitClick(String? referrer) {
+  final v = _referrerParam(referrer, 'strait_click');
   return v != null && _clickIdRe.hasMatch(v) ? v : null;
 }
 
@@ -117,7 +117,7 @@ String? _referrerParam(String? referrer, String key) {
   return null;
 }
 
-/// A tap id as Bridge issues it (uuid); anything else is ignored.
+/// A tap id as Strait issues it (uuid); anything else is ignored.
 final _clickIdRe = RegExp(
   r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
   caseSensitive: false,
@@ -130,7 +130,7 @@ class ClickIdResult {
   const ClickIdResult(this.url, this.clickId);
 }
 
-/// Remove every `bridge_click` parameter from a URL's query, keeping the rest
+/// Remove every `strait_click` parameter from a URL's query, keeping the rest
 /// of the URL byte-for-byte (fragment included). Returns the cleaned URL and
 /// the tap id (null when absent or malformed). The app never sees the tap id.
 ClickIdResult takeClickId(String raw) {
@@ -143,7 +143,7 @@ ClickIdResult takeClickId(String raw) {
   String? clickId;
   final kept = beforeHash.substring(q + 1).split('&').where((pair) {
     final i = pair.indexOf('=');
-    if (_decode(i < 0 ? pair : pair.substring(0, i)) != 'bridge_click') return true;
+    if (_decode(i < 0 ? pair : pair.substring(0, i)) != 'strait_click') return true;
     final v = _decode(i < 0 ? '' : pair.substring(i + 1));
     if (_clickIdRe.hasMatch(v)) clickId = v.toLowerCase();
     return false;
@@ -162,7 +162,7 @@ class ClassifiedUrl {
   final String? path;
   final Map<String, String>? params;
 
-  /// Tap id from a Bridge hand-off (removed from url/params), else null.
+  /// Tap id from a Strait hand-off (removed from url/params), else null.
   final String? clickId;
 
   const ClassifiedUrl._(this.route, this.needsResolve, this.url, this.path, this.params,
@@ -170,10 +170,10 @@ class ClassifiedUrl {
 }
 
 /// What a URL handed to the app means (B3, B4):
-/// - https on a Bridge link host → a short link; ask /v1/resolve.
+/// - https on a Strait link host → a short link; ask /v1/resolve.
 /// - other https → it IS the destination.
 /// - yourapp://host/path (browser hand-off) → destination https://host/path.
-/// A `bridge_click` tap id is removed from the destination and returned apart.
+/// A `strait_click` tap id is removed from the destination and returned apart.
 /// Returns null for anything that isn't a URL.
 ClassifiedUrl? classifyUrl(String raw, List<String> linkHosts) {
   final p0 = splitUrl(raw);

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:test/test.dart';
-import 'package:bridge_sdk/src/signature.dart';
+import 'package:strait_sdk/src/signature.dart';
 
 /// Cross-language parity: the SAME golden vectors the server, sdk-web, and
 /// sdk-react-native assert against. If Dart drifts from JS here, deferred match

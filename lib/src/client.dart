@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'bridge.dart' show DeviceFields;
+import 'strait.dart' show DeviceFields;
 import 'core.dart';
 
 /// Persistent key/value storage, e.g. a `shared_preferences` wrapper.
@@ -109,16 +109,16 @@ class LinkStart {
   });
 }
 
-const _deferredFlag = 'bridge.deferredChecked';
-const _queueKey = 'bridge.pendingOpens';
+const _deferredFlag = 'strait.deferredChecked';
+const _queueKey = 'strait.pendingOpens';
 
-/// The Bridge client: direct links (app_links), deferred links, analytics.
+/// The Strait client: direct links (app_links), deferred links, analytics.
 ///
-/// Port of the React Native `createBridge`. Pure Dart: the app hands it the
+/// Port of the React Native `createStrait`. Pure Dart: the app hands it the
 /// launch URL, a stream of later URLs and a stream of lifecycle states (see
 /// README), so all logic is tested without Flutter.
-class BridgeLinks {
-  /// Workspace publishable key (`bk_pub_live_…`), Dashboard → Get started.
+class StraitLinks {
+  /// Workspace publishable key (`st_pub_live_…`), Dashboard → Get started.
   final String publishableKey;
 
   /// 'ios' | 'android' | 'other'.
@@ -139,7 +139,7 @@ class BridgeLinks {
   final _startCtl = StreamController<LinkStart>.broadcast();
   final _subs = <StreamSubscription<dynamic>>[];
 
-  BridgeLinks({
+  StraitLinks({
     required this.publishableKey,
     required String endpoint,
     required this.platform,
@@ -324,9 +324,9 @@ class BridgeLinks {
         try {
           referrer = await _installReferrer?.call();
         } catch (_) {}
-        final linkId = parseBridgeLink(referrer);
+        final linkId = parseStraitLink(referrer);
         if (linkId != null) {
-          final clickId = parseBridgeClick(referrer);
+          final clickId = parseStraitClick(referrer);
           final r = await answered('/v1/referrer', {
             'publishableKey': publishableKey,
             'linkId': linkId,

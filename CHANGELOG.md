@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0
+
+- **Breaking: renamed to Strait.** The package is now `strait_sdk`
+  (`import 'package:strait_sdk/strait_sdk.dart';`). `BridgeLinks` →
+  `StraitLinks`, `parseBridgeLink` → `parseStraitLink`, `parseBridgeClick` →
+  `parseStraitClick`; `lib/src/bridge.dart` → `lib/src/strait.dart`.
+- **Breaking (clean break, no aliases):** wire params are now `strait_click`
+  and `strait_link` (Play Install Referrer and hand-off URLs); the old
+  `bridge_*` names are no longer read. Storage keys are now `strait.*`
+  (`strait.deferredChecked`, `strait.pendingOpens`); values saved under the
+  old keys are ignored, so a deferred link may be checked once more after
+  upgrading.
+- Publishable keys are issued as `st_pub_live_…` / `st_pub_test_…`.
+
 ## 0.4.0
 
 - **New (contract B14):** every link open is reported exactly once. Each open

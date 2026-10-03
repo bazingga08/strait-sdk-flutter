@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
-import 'package:bridge_sdk/src/bridge.dart';
+import 'package:strait_sdk/src/strait.dart';
 
-const key = 'bk_pub_test_0123456789abcdef0123456789abcdef';
+const key = 'st_pub_test_0123456789abcdef0123456789abcdef';
 
 const device = DeviceFields(
   screenWidth: 393,
@@ -14,19 +14,19 @@ const device = DeviceFields(
 );
 
 void main() {
-  group('parseBridgeLink', () {
-    test('extracts bridge_link from a referrer', () {
-      expect(parseBridgeLink('utm_source=x&bridge_link=lnk_42'), equals('lnk_42'));
+  group('parseStraitLink', () {
+    test('extracts strait_link from a referrer', () {
+      expect(parseStraitLink('utm_source=x&strait_link=lnk_42'), equals('lnk_42'));
     });
     test('null when absent', () {
-      expect(parseBridgeLink('utm_source=x'), isNull);
-      expect(parseBridgeLink(null), isNull);
-      expect(parseBridgeLink(''), isNull);
+      expect(parseStraitLink('utm_source=x'), isNull);
+      expect(parseStraitLink(null), isNull);
+      expect(parseStraitLink(''), isNull);
     });
   });
 
   group('resolveDeferredLink — Android deterministic', () {
-    test('uses /v1/referrer when referrer carries a bridge_link', () async {
+    test('uses /v1/referrer when referrer carries a strait_link', () async {
       late Uri called;
       late Map<String, dynamic> body;
       final client = MockClient((req) async {
@@ -42,7 +42,7 @@ void main() {
         endpoint: 'https://go.example.com/',
         platform: 'android',
         device: device,
-        installReferrer: 'bridge_link=lnk_42',
+        installReferrer: 'strait_link=lnk_42',
         client: client,
       );
       expect(r.matchMethod, equals('install_referrer'));
@@ -69,7 +69,7 @@ void main() {
         endpoint: 'https://go.example.com',
         platform: 'android',
         device: device,
-        installReferrer: 'bridge_link=lnk_x',
+        installReferrer: 'strait_link=lnk_x',
         client: client,
       );
       expect(r.matchMethod, equals('exact_ext'));

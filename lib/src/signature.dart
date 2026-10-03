@@ -1,4 +1,4 @@
-/// Bridge deferred-match signature — Dart port of shared-spec/RECIPE.md.
+/// Strait deferred-match signature — Dart port of shared-spec/RECIPE.md.
 ///
 /// MUST be byte-identical to the JS reference (server + sdk-web + sdk-react-native).
 /// The golden vectors in test/signature-vectors.json are the contract; any drift
